@@ -6,7 +6,9 @@ using UnityEngine;
 public class Pathfinder : MonoBehaviour
 {
     [SerializeField] Vector2Int startCoordinates;
+    public Vector2Int StartCoordinates { get { return startCoordinates;}}
     [SerializeField] Vector2Int destinationCoordinates;
+    public Vector2Int DestinationCoordinates { get { return destinationCoordinates;}}
 
     Node startNode;
     Node destinationNode;    
@@ -26,15 +28,46 @@ public class Pathfinder : MonoBehaviour
         if (gridManager != null)   
         {
             grid = gridManager.Grid;
+            startNode = grid[startCoordinates];
+            destinationNode = grid[destinationCoordinates];
         }
-
-        startNode = new Node(startCoordinates, true);
-        destinationNode = new Node(destinationCoordinates, true);
     }
 
     void Start()
+    {        
+        GetNewPath();
+    }
+
+    public List<Node> GetNewPath()
     {
+        gridManager.ResetNodes();
         BreathFirstSearch();
+        return BuildPath();
+    }
+
+    void BreathFirstSearch()
+    {
+        startNode.isWalkable = true;
+        destinationNode.isWalkable = true;
+        
+        frontier.Clear();
+        reached.Clear();
+        
+        bool isRunning = true;
+
+        frontier.Enqueue(startNode);
+        reached.Add(startCoordinates, startNode);
+
+        while(frontier.Count > 0 && isRunning)
+        {
+            currentSearchNode = frontier.Dequeue();
+            currentSearchNode.isExplored = true;
+            ExploreNeighbors();
+            if(currentSearchNode.coordinates == destinationCoordinates)
+            {
+                isRunning = false;
+            }
+        }
     }
 
     void ExploreNeighbors()
@@ -55,28 +88,50 @@ public class Pathfinder : MonoBehaviour
         {
             if(!reached.ContainsKey(neighbor.coordinates) && neighbor.isWalkable)
             {
+                neighbor.connectedTo = currentSearchNode;
                 reached.Add(neighbor.coordinates, neighbor);
                 frontier.Enqueue(neighbor);
             }
         }
     }
 
-    void BreathFirstSearch()
+    List<Node> BuildPath()
     {
-        bool isRunning = true;
+        List<Node> path = new List<Node>();
+        Node currentNode = destinationNode;
 
-        frontier.Enqueue(startNode);
-        reached.Add(startCoordinates, startNode);
+        path.Add(currentNode);
+        currentNode.isPath = true;
 
-        while(frontier.Count > 0 && isRunning)
+        while (currentNode.connectedTo != null)
         {
-            currentSearchNode = frontier.Dequeue();
-            currentSearchNode.isExplored = true;
-            ExploreNeighbors();
-            if(currentSearchNode.coordinates == destinationCoordinates)
+            currentNode = currentNode.connectedTo;
+            path.Add(currentNode);
+            currentNode.isPath = true;
+        }
+
+        path.Reverse();
+
+        return path;
+    }
+
+    public bool WillBlockPath(Vector2Int coordinates)
+    {
+        if(grid.ContainsKey(coordinates))
+        {
+            bool previousState = grid[coordinates].isWalkable;
+
+            grid[coordinates].isWalkable = false;
+            List<Node> newPath = GetNewPath();
+            grid[coordinates].isWalkable = previousState;
+
+            if(newPath.Count <= 1)
             {
-                isRunning = false;
+                GetNewPath();
+                return true;
             }
         }
+
+        return false;
     }
 }

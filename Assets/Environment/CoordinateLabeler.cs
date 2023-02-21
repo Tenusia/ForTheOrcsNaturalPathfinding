@@ -10,7 +10,7 @@ public class CoordinateLabeler : MonoBehaviour
 {  
     [SerializeField] Color defaultColor = Color.white;
     [SerializeField] Color blockedColor = Color.red;
-    [SerializeField] Color exploredColor = Color.yellow;
+    [SerializeField] Color exploredColor = Color.grey;
     [SerializeField] Color pathColor = new Color(1f, 0.5f, 0f);
     
     TextMeshPro label;
@@ -76,8 +76,9 @@ public class CoordinateLabeler : MonoBehaviour
 
     void DisplayCoordinate()
     {
-        coordinates.x = Mathf.RoundToInt(transform.parent.position.x / UnityEditor.EditorSnapSettings.move.x);
-        coordinates.y = Mathf.RoundToInt(transform.parent.position.z / UnityEditor.EditorSnapSettings.move.z);
+        if(gridManager == null) { return; }
+        coordinates.x = Mathf.RoundToInt(transform.parent.position.x / gridManager.UnityGridSize);
+        coordinates.y = Mathf.RoundToInt(transform.parent.position.z / gridManager.UnityGridSize);
         label.text = coordinates.x + "," + coordinates.y;
     }
 
